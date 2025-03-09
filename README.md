@@ -1,6 +1,8 @@
 # Noti.nvim
 A really ---REALLY--- simple notification plugins for neovim (around ~200 loc)  
 
+> This plugin is in very early stage of development, so i gonna save u the time by just saying this is probably not what u looking for. But if you want to contribute, hit the PR!
+
 ## Features:
  - Replaces `vim.notify` API with floating window notification
  - Provides a simple notification center window to view past logs

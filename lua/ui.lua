@@ -106,6 +106,10 @@ local function create_push_notification(opts, log)
 
 	local formattedLog = utils.format_log(log)
 
+	if formattedLog == "" then
+		return
+	end
+
 	table.insert(feed, formattedLog)
 	-- Fill buffer with logs
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { formattedLog })
@@ -155,7 +159,7 @@ end
 ---@param buf integer | nil
 ---@param logs log[]
 local function insert_log_to_buffer(buf, logs)
-        logs = utils.array_reverse(logs)
+	logs = utils.array_reverse(logs)
 	if buf == nil then
 		return
 	end

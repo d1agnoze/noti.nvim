@@ -1,3 +1,4 @@
+local utils = require("utils")
 ---@class position
 ---@field row number
 ---@field col number
@@ -14,6 +15,32 @@
 ---@field filter string[]
 ---@field keep_original boolean
 ---@field max_logs number
+
+local color = {
+	TRACE = "DiagnosticHint",
+	DEBUG = "DiagnosticUnnecessary",
+	INFO = "DiagnosticOk",
+	WARN = "DiagnosticWarn",
+	ERROR = "DiagnosticError",
+}
+
+---return log string with highlight detail, nil if level not found in string or in color table
+---@param log string
+---@param level string
+local function get_level_color(log, level)
+	local level_start = log:find(level)
+
+	if level_start and color[level] then
+		local out = {
+			color = color[level],
+			start_pos = level_start - 1,
+			end_pos = level_start + #level - 1,
+		}
+		return out
+	end
+
+	return nil
+end
 
 local function close_push(win, buf)
 	if win and vim.api.nvim_win_is_valid(win) then
@@ -71,35 +98,39 @@ local function get_win_config(opts)
 end
 
 ---@param opts winopt
----@param log string
+---@param log log
 local function create_push_notification(opts, log)
 	local feed = {}
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_open_win(buf, false, get_win_config(opts))
 
-	table.insert(feed, log)
+	local formattedLog = utils.format_log(log)
 
+	table.insert(feed, formattedLog)
 	-- Fill buffer with logs
-	vim.api.nvim_buf_set_lines(buf, 1, -1, false, feed)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { formattedLog })
+
+	local hl = get_level_color(formattedLog, log.level)
+	if hl then
+		vim.api.nvim_buf_add_highlight(buf, -1, hl.color, 0, hl.start_pos, hl.end_pos)
+	end
+
+	vim.api.nvim_buf_add_highlight(buf, -1, "Comment", 0, 0, #log.time)
 
 	-- Set buf attribute
 	vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
 	-- Auto close
 	if opts.wait ~= 0 then
-		vim.defer_fn(function() close_push(win, buf) end, opts.wait)
+		vim.defer_fn(function()
+			close_push(win, buf)
+		end, opts.wait)
 	end
 end
 
 local function create_buffer()
-	local buf = vim.api.nvim_create_buf(false, true)
-
-	-- local keyOpt = { noremap = true, silent = true, callback = callback }
-	-- vim.api.nvim_buf_set_keymap(buf, "n", "q", "", keyOpt)
-
-	return buf
+	return vim.api.nvim_create_buf(false, true)
 end
-
 
 local function close_buffer_and_window(buf, win)
 	if vim.api.nvim_win_is_valid(win) then
@@ -114,18 +145,44 @@ local function create_notification_window(opts, buf)
 		noremap = true,
 		callback = function()
 			close_buffer_and_window(buf, win)
-		end
+		end,
 	}
 	vim.api.nvim_buf_set_keymap(buf, "n", "q", "", keyOpt)
 
 	return win
 end
 
+---@param buf integer | nil
+---@param logs log[]
+local function insert_log_to_buffer(buf, logs)
+        logs = utils.array_reverse(logs)
+	if buf == nil then
+		return
+	end
+	vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+
+	local formattedLogs = utils.parse_log(logs)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, formattedLogs)
+
+	if #logs > 0 then
+		-- add highlight
+		for i, value in ipairs(logs) do
+			local hl = get_level_color(formattedLogs[i], value.level)
+			if hl then
+				vim.api.nvim_buf_add_highlight(buf, -1, hl.color, i - 1, hl.start_pos, hl.end_pos)
+			end
+			vim.api.nvim_buf_add_highlight(buf, -1, "Comment", i - 1, 0, #value.time)
+		end
+	end
+
+	vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+end
 
 local M = {
 	open_center = create_notification_window,
 	push_noti = create_push_notification,
 	create_buffer = create_buffer,
+	write_logs = insert_log_to_buffer,
 	close_buffer_and_window = close_buffer_and_window,
 }
 

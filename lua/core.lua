@@ -1,5 +1,5 @@
-local utils = require 'utils'
-local ui = require('ui')
+local utils = require("utils")
+local ui = require("ui")
 
 ---@class Instance
 ---@field logs log[]
@@ -26,10 +26,19 @@ end
 ---@param level integer
 function Core:add(msg, level)
 	local level_label = utils.find_key_by_value(vim.log.levels, level) or "OFF"
-	if level_label == "OFF" then return end
+	if level_label == "OFF" then
+		return
+	end
+
+	local is_level_in_filter = vim.tbl_contains(self.conf.filter, level_label)
+	if not is_level_in_filter then
+		return
+	end
 
 	-- Ensure logs don't exceed the limit
-	if #self.logs >= self.conf.max_logs then table.remove(self.logs, 1) end
+	if #self.logs >= self.conf.max_logs then
+		table.remove(self.logs, 1)
+	end
 
 	local log = { level = level_label, message = msg, time = os.date("%Y-%m-%d %H:%M:%S") }
 
@@ -61,16 +70,12 @@ end
 ---push new notification to UI
 ---@param log log
 function Core:push_notification(log)
-	local log_string = utils.format_log(log)
-	ui.push_noti(self.conf.quick, log_string)
+	ui.push_noti(self.conf.quick, log)
 end
 
 function Core:update_buf()
 	self.buffer = self.buffer or ui.create_buffer()
-
-	vim.api.nvim_set_option_value("modifiable", true, { buf = self.buffer })
-	vim.api.nvim_buf_set_lines(self.buffer, 1, -1, false, utils.parse_log(self.logs))
-	vim.api.nvim_set_option_value("modifiable", false, { buf = self.buffer })
+	ui.write_logs(self.buffer, self.logs)
 end
 
 return Core

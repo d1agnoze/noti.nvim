@@ -1,4 +1,5 @@
-local Core = require "core"
+local Core = require("core")
+local ov = vim.notify
 
 ---@class log
 ---@field message string
@@ -29,8 +30,11 @@ local function main(opts)
 	local core = Core:new(opts)
 
 	---@diagnostic disable-next-line: duplicate-set-field
-	vim.notify = function(msg, level, _)
-		if level == nil then return end
+	vim.notify = function(msg, level, o)
+		if level == nil then
+			ov(msg, level, o)
+			return
+		end
 		core:add(msg, level)
 	end
 

@@ -2,7 +2,7 @@
 A really ---REALLY--- simple notification plugins for neovim (around ~200 loc)  
 
 > This plugin is in very early stage of development, so i gonna save u the time by just saying this is probably not what u looking for. But if you want to contribute, hit the PR!
-![Screenshot From 2025-03-22 22-40-32](https://github.com/user-attachments/assets/4a92a502-0ab0-4d60-bc3f-25af39e95391)
+![image](https://github.com/user-attachments/assets/4a92a502-0ab0-4d60-bc3f-25af39e95391)
 
 ## Features:
  - Replaces `vim.notify` API with floating window notification
